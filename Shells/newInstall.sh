@@ -33,6 +33,7 @@ chmod +x server_teamspeak3.sh
 dos2unix server_minecraft.sh
 chmod +x server_minecraft.sh
 ./server_minecraft.sh install 1
+./server_minecraft.sh java_install
 ./server_minecraft.sh overviewer_install
 
 # Clean console
