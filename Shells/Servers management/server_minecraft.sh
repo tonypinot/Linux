@@ -4,7 +4,7 @@
 # REQUIRED FILES
 #------------------------------------------------------------#
 source /home/scripts/functions/tryCatch.sh
-source /home/scripts/functions/createUser.sh
+source /home/scripts/functions/voidCore.sh
 source /home/scripts/functions/APT.sh
 
 #------------------------------------------------------------#
