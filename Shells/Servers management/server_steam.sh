@@ -3,10 +3,7 @@
 #------------------------------------------------------------#
 # REQUIRED FILES
 #------------------------------------------------------------#
-source /home/scripts/functions/tryCatch.sh
-source /home/scripts/functions/createUser.sh
-source /home/scripts/functions/basicCore.sh
-source /home/scripts/functions/APT.sh
+source /home/scripts/functions/voidCore.sh
 
 #------------------------------------------------------------#
 # FUNCTIONS
@@ -15,7 +12,7 @@ source /home/scripts/functions/APT.sh
 	#------------------------------#
 	# STEAMCMD
 	#------------------------------#
-	SteamInstall()
+	function SteamInstall()
 	{
 		# 32bits libraries
 		dpkg --add-architecture i386
@@ -25,12 +22,10 @@ source /home/scripts/functions/APT.sh
 		apt-get install -f
 		
 		# Create steam user if not exist
-		if [ -z "$(getent passwd steam)" ]; then
-			userName="steam"
-			userParameters="-m"
-			userFolder="steam"
-			createUser
-			passwd steam	
+		if ! HasUser steam
+		then
+			CreateUser steam "-m" "steam" true
+			passwd steam
 		fi
 		
 		# Download steam files
@@ -38,111 +33,165 @@ source /home/scripts/functions/APT.sh
 		su steam -c "cd /home/steam/steamcmd/;wget http://media.steampowered.com/installer/steamcmd_linux.tar.gz"
 		su steam -c "cd /home/steam/steamcmd/;tar -xvzf steamcmd_linux.tar.gz;rm steamcmd_linux.tar.gz"
 	}
-	
-	#------------------------------#
-	# GLOBAL
-	#------------------------------#
-	ServerInstall()
+	function SteamRemove()
 	{
-		serverType=$1
-	
-		echo "Checking the server type parameter"
-		if [[ -z $serverType ]]; then
-			echo "Wrong parameters - Server type is empty"
-			exit
-		fi
-		
-		case $serverType in
-			csgo)
-				ServerCSGOInstall $2
-			;;
-		esac
-	}
-	ServerStart()
-	{
-		serverType=$1
-	
-		echo "Checking the server type parameter"
-		if [[ -z $serverType ]]; then
-			echo "Wrong parameters - Server type is empty"
-			exit
-		fi
-		
-		case $serverType in
-			csgo)
-				ServerCSGOStart $2 $3 $4 $5 $6 $7 $8
-			;;
-		esac
+		DeleteUser steam true
 	}
 	
 	#------------------------------#
 	# CSGO
-	#------------------------------#
-	ServerCSGOInstall()
+	#------------------------------#	
+	function CSGOStart()
 	{
-		serverID=$1
-		
-		echo "Checking the server id parameter"
-		if [[ -z $serverID ]]; then
-			echo "Wrong parameters - Server id is empty"
-			exit
-		else
-			serverFolder="/home/steam/server$serverID/"
-			if [ -d "$serverFolder" ]; then
-				su steam -c "rmdir $serverFolder"	
-			fi	
-		fi
-		
-		su steam -c "cd /home/steam/steamcmd/;./steamcmd.sh +login anonymous +force_install_dir /home/steam/server$serverID/ +app_update 740 validate +quit"
-	}
-	ServerCSGOStart()
-	{
-		serverID=$1	
-		steamToken=$2		
-		serverPort=$3
-		serverGameType=$4
-		serverGameMode=$5
-		mapgroup=$6
-		map=$7
+		serverID=${1}; if IsEmpty "$serverID" "[server_steam.sh] csgo parameter serverID"; then exit; fi
+		steamToken=${2}; if IsEmpty "$steamToken" "[server_steam.sh] csgo parameter steamToken"; then exit; fi
+		serverPort=${3}; if IsEmpty "$serverPort" "[server_steam.sh] csgo parameter serverPort"; then exit; fi
+		serverGameType=${4}; if IsEmpty "$serverGameType" "[server_steam.sh] csgo parameter serverGameType"; then exit; fi
+		serverGameMode=${5}; if IsEmpty "$serverGameMode" "[server_steam.sh] csgo parameter serverGameMode"; then exit; fi
+		mapgroup=${6}; if IsEmpty "$mapgroup" "[server_steam.sh] csgo parameter mapgroup"; then exit; fi
+		map=${7}; if IsEmpty "$map" "[server_steam.sh] csgo parameter map"; then exit; fi
 
-		clear
-		if IsEmpty "$serverID" "[CSGO Parameter] serverID"; then return; fi
-		if IsEmpty "$steamToken" "[CSGO Parameter] steamToken"; then return; fi
-		if IsEmpty "$serverPort" "[CSGO Parameter] serverPort"; then return; fi
-		if IsEmpty "$serverGameType" "[CSGO Parameter] serverGameType"; then return; fi
-		if IsEmpty "$serverGameMode" "[CSGO Parameter] serverGameMode"; then return; fi
-		if IsEmpty "$mapgroup" "[CSGO Parameter] mapgroup"; then return; fi
-		if IsEmpty "$map" "[CSGO Parameter] map"; then return; fi
+		customParameters="+sv_setsteamaccount $steamToken -port $serverPort +game_type $serverGameType +game_mode $serverGameMode +mapgroup $mapgroup +map $map"
+		serverStartCommand="./srcds_run -game csgo -console -usercon -secure -net_port_try 1 -tickrate 128 -stringtables $customParameters"
 		
-		serverCustomParameters="+sv_setsteamaccount $steamToken -port $serverPort +game_type $serverGameType +game_mode $serverGameMode +mapgroup $mapgroup +map $map"
-		serverParameters="./srcds_run -game csgo -console -usercon -secure -net_port_try 1 $serverCustomParameters"
+		workshopAuthkey=${8}; if ! IsEmpty "$workshopAuthkey" "[server_steam.sh] csgo parameter workshopAuthkey"; then serverStartCommand+=" -authkey $workshopAuthkey" ; fi
+		workshopCollection=${9}; if ! IsEmpty "$workshopCollection" "[server_steam.sh] csgo parameter workshopCollection"; then serverStartCommand+=" +host_workshop_collection $workshopCollection" ; fi
+		workshopMap=${10}; if ! IsEmpty "$workshopMap" "[server_steam.sh] csgo parameter workshopMap"; then serverStartCommand+=" +host_workshop_map $workshopMap" ; fi
+
+		su steam -c "cd /home/steam/games/csgo/server$serverID/;screen -AdmS csgoServer$serverID $serverStartCommand"
+	}
+	function CSGOStop()
+	{
+		serverID=${1}; if IsEmpty "$serverID" "[server_steam.sh] csgo parameter serverID"; then exit; fi
+		screenName="csgoServer$serverID"
 		
-		su steam -c "cd /home/steam/server$serverID/;screen -AdmS csgoServer$serverID $serverParameters"
+		if ls -laR /var/run/screen/ | grep -q $screenName
+		then
+			su steam -c "screen -S $screenName -X quit"
+		fi
+	}
+	function CSGOUpdate()
+	{
+		serverID=${1}; if IsEmpty "$serverID" "[server_steam.sh] csgo parameter serverID"; then exit; fi		
+		su steam -c "cd /home/steam/steamcmd/;./steamcmd.sh +login anonymous +force_install_dir /home/steam/games/csgo/server$serverID/ +app_update 740 validate +quit"
+	}
+	function CSGOUninstall()
+	{
+		serverID=${1}; if IsEmpty "$serverID" "[server_steam.sh] csgo parameter serverID"; then exit; fi
+		CSGOStop $serverID
 		
-		true
+		rm -R "/home/steam/games/csgo/server$serverID/"
+	}
+
+	#------------------------------#
+	# ARK
+	#------------------------------#
+	function ARKInstallPrerequisites()
+	{
+		echo 'fs.file-max=100000' > /etc/sysctl.conf;
+		sysctl -p /etc/sysctl.conf
+		
+		echo 'fs.file-max=100000' > /etc/sysctl.conf;
+		echo 'soft nofile 1000000' > /etc/security/limits.conf;
+		echo 'hard nofile 1000000' > /etc/security/limits.conf;
+		echo 'session required pam_limits.so' > /etc/pam.d/common-session;
+	}
+	function ARKStart()
+	{
+		serverID=${1}; if IsEmpty "$serverID" "[server_steam.sh] ARK parameter serverID"; then exit; fi		
+		sessionName=${2}; if IsEmpty "$sessionName" "[server_steam.sh] ARK parameter sessionName"; then exit; fi
+		serverPassword=${3}; if IsEmpty "$serverPassword" "[server_steam.sh] ARK parameter serverPassword"; then exit; fi
+		serverAdminPassword=${4}; if IsEmpty "$serverAdminPassword" "[server_steam.sh] ARK parameter serverAdminPassword"; then exit; fi
+	
+		customParameters="SessionName=$sessionName?ServerPassword=$serverPassword?ServerAdminPassword=$serverAdminPassword"
+		serverStartCommand="./ShooterGameServer TheIsland?listen?$customParameters -server -log"		
+		
+		su steam -c "cd /home/steam/games/ark/server$serverID/ShooterGame/Binaries/Linux/;screen -AdmS arkServer$serverID $serverStartCommand"
+	}
+	function ARKStop()
+	{
+		serverID=${1}; if IsEmpty "$serverID" "[server_steam.sh] ARK parameter serverID"; then exit; fi
+		screenName="arkServer$serverID"
+		
+		if ls -laR /var/run/screen/ | grep -q $screenName
+		then
+			su steam -c "screen -S $screenName -X quit"
+		fi
+	}
+	function ARKUpdate()
+	{
+		serverID=${1}; if IsEmpty "$serverID" "[server_steam.sh] ARK parameter serverID"; then exit; fi
+		su steam -c "cd /home/steam/steamcmd/;./steamcmd.sh +login anonymous +force_install_dir /home/steam/games/ark/server$serverID/ +app_update 376030 validate +quit"
+	}
+	function ARKUninstall()
+	{
+		serverID=${1}; if IsEmpty "$serverID" "[server_steam.sh] csgo parameter serverID"; then exit; fi
+		ARKStop $serverID
+		
+		rm -R "/home/steam/games/ark/server$serverID/"
 	}
 
 #------------------------------------------------------------#
 # SCRIPT
 #------------------------------------------------------------#
-action=$1
+clear
 
-case $action in
+target=${1}; if IsEmpty "$target" "[server_steam.sh] parameter target"; then exit; fi
+action=${2}; if IsEmpty "$action" "[server_steam.sh] parameter action"; then exit; fi
 
-	SteamInstall)
-		SteamInstall
+clear
+
+case $target in
+
+	#------------------------------#
+	# STEAMCMD
+	#------------------------------#
+	"steam")	
+		case $action in
+			"install")
+				SteamInstall
+			;;
+			"remove")
+				SteamRemove
+			;;			
+		esac
 	;;
-	ServerInstall)
-		ServerInstall $2 $3
+	
+	#------------------------------#
+	# CSGO
+	#------------------------------#
+	"csgo")		
+		case $action in
+			"start")
+				CSGOStart ${3} ${4} ${5} ${6} ${7} ${8} ${9} ${10} ${11} ${12}
+			;;
+			"update")
+				CSGOUpdate ${3}
+			;;
+			"stop")
+				CSGOStop ${3}
+			;;
+		esac
 	;;
-	ServerUninstall)
-		ServerUninstall $2 $3
-	;;
-	ServerStart)
-		ServerStart $2 $3 $4 $5 $6 $7 $8 $9
-	;;
-	ServerStop)
-		ServerStop $2 $3
+	
+	#------------------------------#
+	# ARK
+	#------------------------------#
+	"ark")
+		case $action in
+			"installPrerequisites")
+				ARKInstallPrerequisites
+			;;
+			"start")
+				ARKStart ${3} ${4} ${5} ${6}
+			;;
+			"update")
+				ARKUpdate ${3}
+			;;
+			"stop")
+				ARKStop ${3}
+			;;
+		esac
 	;;
 	
 esac
