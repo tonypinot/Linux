@@ -18,7 +18,7 @@ source /home/scripts/functions/voidCore.sh
 		dpkg --add-architecture i386
 		apt-get update
 		apt-get upgrade
-		apt-get install -y lib32gcc1
+		apt-get install -y libc6-i386 lib32gcc1 lib32stdc++6 screen		
 		apt-get install -f
 		
 		# Create steam user if not exist
