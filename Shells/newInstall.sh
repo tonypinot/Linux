@@ -29,6 +29,14 @@ chmod +x server_teamspeak3.sh
 ./server_teamspeak3.sh install 1
 ./server_teamspeak3.sh start 1
 
+# Install Steam
+dos2unix server_steam.sh
+chmod +x server_steam.sh
+./server_steam.sh steam install
+
+# Install CSGO Server
+./server_steam.sh csgo update 1
+
 # Install Minecraft
 dos2unix server_minecraft.sh
 chmod +x server_minecraft.sh
