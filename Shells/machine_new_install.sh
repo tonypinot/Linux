@@ -1,7 +1,20 @@
+#!/bin/sh
+
+# Required files
+source /home/scripts/voidCore.sh
+
+# Scripts directory
 cd /home/scripts/
 
 # Install: dos2unix
-apt-get install -y dos2unix
+InstallPackageAPT dos2unix
+
+# Install: proftpd
+dos2unix server_proftpd.sh
+chmod +x server_proftpd.sh
+./server_proftpd.sh install
+./server_proftpd.sh enableDefaultDirectory
+./server_proftpd.sh reload
 
 # Install Mysql
 dos2unix server_mysql.sh
@@ -13,15 +26,25 @@ chmod +x server_mysql.sh
 dos2unix server_apache2.sh
 chmod +x server_apache2.sh
 ./server_apache2.sh install
+./server_apache2.sh configuration
+./server_apache2.sh restart
 
 # Install Php 5.6
 dos2unix server_php5-6.sh
 chmod +x server_php5-6.sh
 ./server_php5-6.sh install
 
-# Install web site
+# Install .NetCore 2
+dos2unix sdk_dotnetcore2x.sh
+chmod +x sdk_dotnetcore2x.sh
+./sdk_dotnetcore2x.sh install
 
-# Install web site PhpMyAdmin
+#------------------------------------------------------------#
+# Game servers
+#------------------------------------------------------------#
+
+# Install: screen
+InstallPackageAPT screen
 
 # Install Teamspeak3
 dos2unix server_teamspeak3.sh
