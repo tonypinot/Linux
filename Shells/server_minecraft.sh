@@ -3,9 +3,7 @@
 #------------------------------------------------------------#
 # REQUIRED FILES
 #------------------------------------------------------------#
-source /home/scripts/functions/tryCatch.sh
-source /home/scripts/functions/voidCore.sh
-source /home/scripts/functions/APT.sh
+source /home/scripts/voidCore.sh
 
 #------------------------------------------------------------#
 # FUNCTIONS
@@ -20,7 +18,7 @@ source /home/scripts/functions/APT.sh
 		echo "deb-src http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main" | tee -a /etc/apt/sources.list.d/webupd8team-java.list
 		apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys EEA14886
 		apt-get update
-		apt-get install -y oracle-java8-installer	
+		InstallPackageAPT "oracle-java8-installer"	
 	}
 
 	#------------------------------#
@@ -28,17 +26,13 @@ source /home/scripts/functions/APT.sh
 	#------------------------------#
 	OverviewerInstall()
 	{
-		packageAPT="apt-transport-https"
-		InstallPackageAPT
-	
-		sourcePackageAPT="deb https://overviewer.org/debian ./"
-		CheckPackageAPTSource		
+		InstallPackageAPT "apt-transport-https"
+		CheckPackageAPTSource "deb https://overviewer.org/debian ./"		
 		
 		wget -O - https://overviewer.org/debian/overviewer.gpg.asc | apt-key add -
 		apt-get update
-		
-		packageAPT="minecraft-overviewer"
-		InstallPackageAPT
+
+		InstallPackageAPT "minecraft-overviewer"
 		
 		echo 'Overviewer texture pack version (ex: 1.12.2):'
 		read version

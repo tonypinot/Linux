@@ -3,7 +3,7 @@
 #------------------------------------------------------------#
 # REQUIRED FILES
 #------------------------------------------------------------#
-source /home/scripts/functions/voidCore.sh
+source /home/scripts/voidCore.sh
 
 #------------------------------------------------------------#
 # FUNCTIONS
@@ -18,7 +18,7 @@ source /home/scripts/functions/voidCore.sh
 		dpkg --add-architecture i386
 		apt-get update
 		apt-get upgrade
-		apt-get install -y libc6-i386 lib32gcc1 lib32stdc++6 screen		
+		InstallPackageAPT "libc6-i386 lib32gcc1 lib32stdc++6"	
 		apt-get install -f
 		
 		# Create steam user if not exist
@@ -37,7 +37,7 @@ source /home/scripts/functions/voidCore.sh
 	{
 		DeleteUser steam true
 	}
-	
+
 	#------------------------------#
 	# CSGO
 	#------------------------------#	
@@ -45,18 +45,19 @@ source /home/scripts/functions/voidCore.sh
 	{
 		serverID=${1}; if IsEmpty "$serverID" "[server_steam.sh] csgo parameter serverID"; then exit; fi
 		steamToken=${2}; if IsEmpty "$steamToken" "[server_steam.sh] csgo parameter steamToken"; then exit; fi
-		serverPort=${3}; if IsEmpty "$serverPort" "[server_steam.sh] csgo parameter serverPort"; then exit; fi
-		serverGameType=${4}; if IsEmpty "$serverGameType" "[server_steam.sh] csgo parameter serverGameType"; then exit; fi
-		serverGameMode=${5}; if IsEmpty "$serverGameMode" "[server_steam.sh] csgo parameter serverGameMode"; then exit; fi
-		mapgroup=${6}; if IsEmpty "$mapgroup" "[server_steam.sh] csgo parameter mapgroup"; then exit; fi
-		map=${7}; if IsEmpty "$map" "[server_steam.sh] csgo parameter map"; then exit; fi
+		serverIp=${3}; if IsEmpty "$serverIp" "[server_steam.sh] csgo parameter serverIp"; then exit; fi
+		serverPort=${4}; if IsEmpty "$serverPort" "[server_steam.sh] csgo parameter serverPort"; then exit; fi
+		serverGameType=${5}; if IsEmpty "$serverGameType" "[server_steam.sh] csgo parameter serverGameType"; then exit; fi
+		serverGameMode=${6}; if IsEmpty "$serverGameMode" "[server_steam.sh] csgo parameter serverGameMode"; then exit; fi
+		mapgroup=${7}; if IsEmpty "$mapgroup" "[server_steam.sh] csgo parameter mapgroup"; then exit; fi
+		map=${8}; if IsEmpty "$map" "[server_steam.sh] csgo parameter map"; then exit; fi
 
-		customParameters="+sv_setsteamaccount $steamToken -port $serverPort +game_type $serverGameType +game_mode $serverGameMode +mapgroup $mapgroup +map $map"
+		customParameters="+sv_setsteamaccount $steamToken +ip $serverIp -port $serverPort +game_type $serverGameType +game_mode $serverGameMode +mapgroup $mapgroup +map $map"
 		serverStartCommand="./srcds_run -game csgo -console -usercon -secure -net_port_try 1 -tickrate 128 -stringtables $customParameters"
 		
-		workshopAuthkey=${8}; if ! IsEmpty "$workshopAuthkey" "[server_steam.sh] csgo parameter workshopAuthkey"; then serverStartCommand+=" -authkey $workshopAuthkey" ; fi
-		workshopCollection=${9}; if ! IsEmpty "$workshopCollection" "[server_steam.sh] csgo parameter workshopCollection"; then serverStartCommand+=" +host_workshop_collection $workshopCollection" ; fi
-		workshopMap=${10}; if ! IsEmpty "$workshopMap" "[server_steam.sh] csgo parameter workshopMap"; then serverStartCommand+=" +host_workshop_map $workshopMap" ; fi
+		workshopAuthkey=${9}; if ! IsEmpty "$workshopAuthkey" "[server_steam.sh] csgo parameter workshopAuthkey"; then serverStartCommand+=" -authkey $workshopAuthkey" ; fi
+		workshopCollection=${10}; if ! IsEmpty "$workshopCollection" "[server_steam.sh] csgo parameter workshopCollection"; then serverStartCommand+=" +host_workshop_collection $workshopCollection" ; fi
+		workshopMap=${11}; if ! IsEmpty "$workshopMap" "[server_steam.sh] csgo parameter workshopMap"; then serverStartCommand+=" +host_workshop_map $workshopMap" ; fi
 
 		su steam -c "cd /home/steam/games/csgo/server$serverID/;screen -AdmS csgoServer$serverID $serverStartCommand"
 	}
@@ -131,6 +132,7 @@ source /home/scripts/functions/voidCore.sh
 		rm -R "/home/steam/games/ark/server$serverID/"
 	}
 
+	
 #------------------------------------------------------------#
 # SCRIPT
 #------------------------------------------------------------#
@@ -138,8 +140,6 @@ clear
 
 target=${1}; if IsEmpty "$target" "[server_steam.sh] parameter target"; then exit; fi
 action=${2}; if IsEmpty "$action" "[server_steam.sh] parameter action"; then exit; fi
-
-clear
 
 case $target in
 
@@ -160,10 +160,10 @@ case $target in
 	#------------------------------#
 	# CSGO
 	#------------------------------#
-	"csgo")		
+	"csgo")
 		case $action in
 			"start")
-				CSGOStart ${3} ${4} ${5} ${6} ${7} ${8} ${9} ${10} ${11} ${12}
+				CSGOStart ${3} ${4} ${5} ${6} ${7} ${8} ${9} ${10} ${11} ${12} ${13}
 			;;
 			"update")
 				CSGOUpdate ${3}

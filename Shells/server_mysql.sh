@@ -3,7 +3,7 @@
 #------------------------------------------------------------#
 # REQUIRED FILES
 #------------------------------------------------------------#
-source /home/scripts/functions/APT.sh
+source /home/scripts/voidCore.sh
 
 #------------------------------------------------------------#
 # ACTIONS
@@ -12,17 +12,14 @@ action=$1
 
 case $action in
 
-	#------------------------------#
-	# INSTALL
-	#------------------------------#
 	install)
-		packageAPT="mysql-server"	
-		InstallPackageAPT
+		InstallPackageAPT mysql-server
 	;;
 
-	#------------------------------#
-	# SECURE
-	#------------------------------#
+	uninstall)
+		UninstallPackageAPT mysql-server
+	;;
+
 	secure)
 		echo 'Enter the mysql root password for execute the mysql securation process:'
 		read mysqlPassword
@@ -33,13 +30,5 @@ case $action in
 		mysql -uroot -p$mysqlPassword -e "DELETE FROM mysql.db WHERE Db=’test’ OR Db=’test_%’"
 		mysql -uroot -p$mysqlPassword -e "FLUSH PRIVILEGES"
 	;;
-	
-	#------------------------------#
-	# UNINSTALL
-	#------------------------------#
-	uninstall)
-		packageAPT="mysql-server"	
-		UninstallPackageAPT
-	;;
-	
+
 esac

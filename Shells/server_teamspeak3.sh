@@ -3,7 +3,7 @@
 #------------------------------------------------------------#
 # REQUIRED FILES
 #------------------------------------------------------------#
-source /home/scripts/functions/createUser.sh
+source /home/scripts/voidCore.sh
 
 #------------------------------------------------------------#
 # ACTIONS
@@ -19,10 +19,7 @@ case $action in
 		serverID=$2
 	
 		# Create teamspeak user
-		userName="teamspeak"
-		userParameters="-m"
-		userFolder="teamspeak"
-		createUser
+		CreateUser teamspeak -m teamspeak true
 		
 		# Create mysql database
 		#ts3Label=$4
