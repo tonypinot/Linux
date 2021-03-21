@@ -1,6 +1,17 @@
 #!/bin/sh
 
 #------------------------------------------------------------#
+# Servers ports
+#------------------------------------------------------------#
+#
+#	ARK -> 30000 to 32000
+#
+#
+#
+#
+#------------------------------------------------------------#
+
+#------------------------------------------------------------#
 # REQUIRED FILES
 #------------------------------------------------------------#
 source /home/scripts/voidCore.sh
@@ -99,14 +110,40 @@ source /home/scripts/voidCore.sh
 	}
 	function ARKStart()
 	{
-		serverID=${1}; if IsEmpty "$serverID" "[server_steam.sh] ARK parameter serverID"; then exit; fi		
-		sessionName=${2}; if IsEmpty "$sessionName" "[server_steam.sh] ARK parameter sessionName"; then exit; fi
+		# Get parameters
+		serverID=${1}; if IsEmpty "$serverID" "[server_steam.sh] ARK parameter serverID"; then exit; fi
+		sessionName=${2}; if IsEmpty "$sessionName" "[server_steam.sh] ARK parameter sessionName"; then exit; fi		
 		serverPassword=${3}; if IsEmpty "$serverPassword" "[server_steam.sh] ARK parameter serverPassword"; then exit; fi
-		serverAdminPassword=${4}; if IsEmpty "$serverAdminPassword" "[server_steam.sh] ARK parameter serverAdminPassword"; then exit; fi
-	
-		customParameters="SessionName=$sessionName?ServerPassword=$serverPassword?ServerAdminPassword=$serverAdminPassword"
-		serverStartCommand="./ShooterGameServer TheIsland?listen?$customParameters -server -log"		
+		serverAdminPassword=${4}; if IsEmpty "$serverAdminPassword" "[server_steam.sh] ARK parameter serverAdminPassword"; then exit; fi		
+		map=${5}; if IsEmpty "$map" "[server_steam.sh] ARK parameter map"; then exit; fi
+		modIds=${6};
 		
+		# Initialize server ports		
+		queryPort=300$serverID 						 # For example: 30001 (udp), 30002 (udp), 30003 (udp)
+		rconPort=$(($queryPort+100)) 				 # For example: 30101 (tcp), 30102 (tcp), 30103 (tcp)
+
+		gameClientPort=$(($rconPort+1000+$serverID)) # For example: 31102 (udp), 31104 (udp), 31106 (udp)
+		rawPort=$(($gameClientPort+1))			     # For example: 31103 (udp), 31105 (udp), 31107 (udp)
+
+		OpenInputPort udp $queryPort
+		OpenInputPort tcp $rconPort
+		OpenInputPort udp $gameClientPort
+		OpenInputPort udp $rawPort		
+
+		# Initialize serverStartCommand
+		mapParameters="$map?AltSaveDirectoryName=$map"		
+		rconParameters="RCONEnabled=True?RCONPort=$rconPort?ServerAdminPassword=$serverAdminPassword"
+		sessionParameters="SessionName=$sessionName?ServerPassword=$serverPassword?Port=$gameClientPort?QueryPort=$queryPort"
+		requiredParameters="listen -usecache -UseBattlEye -crossplay -automanagedmods"
+		
+		serverStartCommand="./ShooterGameServer $mapParameters?$rconParameters?$sessionParameters?$requiredParameters"
+
+		if ! IsEmpty "$modIds" "[server_steam.sh] ARK parameter modIds"		
+		then
+			serverStartCommand+=" -MapModID=$modIds"
+		fi
+				
+		echo "[server_steam.sh] $serverStartCommand"
 		su steam -c "cd /home/steam/games/ark/server$serverID/ShooterGame/Binaries/Linux/;screen -AdmS arkServer$serverID $serverStartCommand"
 	}
 	function ARKStop()
@@ -183,7 +220,7 @@ case $target in
 				ARKInstallPrerequisites
 			;;
 			"start")
-				ARKStart ${3} ${4} ${5} ${6}
+				ARKStart ${3} ${4} ${5} ${6} ${7} ${8}
 			;;
 			"update")
 				ARKUpdate ${3}
