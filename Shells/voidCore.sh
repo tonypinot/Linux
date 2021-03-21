@@ -1,6 +1,45 @@
 #!/bin/sh
 
 #------------------------------------------------------------#
+# IPTABLE PORT FUNCTIONS
+#------------------------------------------------------------#
+function OpenInputPort()
+{
+	if IsEmpty "$1" "[Function OpenInputPort] udp/tcp"; then exit; fi
+	if IsEmpty "$2" "[Function OpenInputPort] Port"; then exit; fi
+
+	mod=$1;
+	port=$2;	
+
+	if  IsEmpty "$3" "[Function OpenInputPort] Range"
+		then
+			iptables -A INPUT -p $mod -m $mod --dport $port -j ACCEPT
+		else
+			iptables -A INPUT -p $mod -m $mod --dport $port:$3 -j ACCEPT
+	fi
+}
+function CloseInputPort()
+{
+	if IsEmpty "$1" "[Function CloseInputPort] Port"; then exit; fi
+	
+	iptables -D INPUT -p tcp -m tcp --dport $1 -j ACCEPT
+}
+function CleanPorts()
+{
+	iptables -P INPUT ACCEPT
+	iptables -P FORWARD ACCEPT
+	iptables -P OUTPUT ACCEPT
+	iptables -t nat -F
+	iptables -t mangle -F
+	iptables -F
+	iptables -X
+}
+function ShowPorts()
+{
+	iptables -L
+}
+
+#------------------------------------------------------------#
 # FILE FUNCTIONS
 #------------------------------------------------------------#
 function RemplaceFileText()
